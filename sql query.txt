@@ -1,0 +1,96 @@
+---tables
+select * from df_vancouver_availability
+select * from host_vancouver_df
+select * from review_vancouver_df
+select * from listing_vancouver_df
+
+--ALL ANALYSIS
+SELECT * into vancouver05 from 
+(
+select * from(
+select case when  host_is_superhost='true' then 'superhost'
+when host_is_superhost='false' then 'otherhost'  end as host,count(b.host_id)as count,
+SUM(host_listings_count)AS total_no_of_listing,
+AVG(price) as avg_price,avg(host_acceptance_rate)as avg_accptance_rate,avg(host_response_rate)as avg_response_rate,
+avg(review_scores_rating)as avg_rating,
+count(case when host_has_profile_pic='true' then host_has_profile_pic end)as profile_pic_available,
+count(case when host_has_profile_pic='false' then host_has_profile_pic end)as profile_pic_not_available,
+count(case when host_identity_verified='true' then host_identity_verified end)as identity_verified,
+count(case when host_identity_verified='false' then host_identity_verified end)as identity_not_verified,
+count(case when instant_bookable='True' then 'instant_bookable' end)as instant_booking_available,
+count(case when instant_bookable='False' then 'instant_bookable' end) as instant_booking_not_available,
+count(case when room_type='entire home/apt' then 'room_type' end) as large_property,
+count(case when room_type='private room' then 'room_type' end) as small_property
+from listing_vancouver_df as a join host_vancouver_df as b
+on a.host_id=b.host_id
+group by case when  host_is_superhost='true' then 'superhost'
+when host_is_superhost='false' then 'otherhost' end)as f
+where host='superhost' or host='otherhost') as k
+
+
+alter table vancouver05
+add country varchar(50) default 'Canada' with values
+
+alter table vancouver05
+add city varchar(50) default 'Vancouver' with values
+
+select *  from vancouver05
+
+
+---MONTHLY BOOKING
+select * into vancouver03 from 
+(
+select host,month_name,month,total_booking from(
+select case when  host_is_superhost='true' then 'superhost'
+when host_is_superhost='false' then 'otherhost'  end as host,
+month(date)as month,datename(month,date)as month_name,count(listing_id) as total_booking from listing_vancouver_df a
+join host_vancouver_df b on a.host_id=b.host_id
+join review_vancouver_df c on a.id=c.listing_id
+group by case when  host_is_superhost='true' then 'superhost'
+when host_is_superhost='false' then 'otherhost'  end,
+month(date),datename(month,date)
+)as r
+where host='superhost' or host='otherhost'
+) as k 
+
+alter table vancouver03
+add country varchar(50) default 'Canada' with values
+
+alter table vancouver03
+add city varchar(50) default 'Vancouver' with values
+
+select * from vancouver03
+order by host desc,month
+
+
+
+
+---REVIEW
+
+select * into vancouver04 from 
+(
+select case when  host_is_superhost='true' then 'superhost'
+when host_is_superhost='false' then 'otherhost'  end as HOST,
+COUNT(reviewer_id)AS COOUNT_OF_REVIEW,
+count(case when comments like '%excellent%' or comments like '%love%' or comments like '%greate%' or
+comments like '%nice%' or comments like '%good%' or comments like '%beautiful%' or 
+comments like '%wonderful%' or comments like '%amazing%' then reviewer_id end) AS
+COUNT_OF_GOOD_REVIEW,
+COUNT( CASE WHEN comments like '%cancelled%' or comments like '%dirty%' or comments like '%bad%'or comments like
+'%disappointed%' THEN reviewer_id END ) AS BAD_REVIEW,
+COUNT(CASE WHEN comments like '%AVERAGE%' THEN COMMENTS END) AS AVERAGE_REVIEW
+ FROM listing_vancouver_df as a
+join review_vancouver_df as b on a.id=b.listing_id
+join host_vancouver_df as c on a.host_id=c.host_id
+GROUP BY case when  host_is_superhost='true' then 'superhost'
+when host_is_superhost='false' then 'otherhost'  end)
+as k
+
+
+alter table vancouver04
+add COUNTRY varchar(50) default 'Canada' with values
+
+alter table vancouver04
+add CITY varchar(50) default 'Vancouver' with values
+
+select * from vancouver04
